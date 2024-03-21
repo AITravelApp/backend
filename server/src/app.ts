@@ -5,7 +5,7 @@ import { createServer } from 'http';
 import express from 'express';
 import { ApolloServerPlugin } from 'apollo-server-plugin-base';
 import { buildSchema } from 'type-graphql';
-import { UserResolver } from './resolvers/UserResolver';
+import { MLResolver } from './resolvers/MLResolver';
 import { AppDataSource } from './type-orm.config';
 
 
@@ -19,7 +19,7 @@ const main = async () => {
 
   const schema = await buildSchema({
     resolvers: [
-      UserResolver,
+      MLResolver,
     ],
     validate: false,
   })

@@ -2,13 +2,13 @@ import { Resolver, Query } from 'type-graphql';
 import axios from 'axios';
 
 @Resolver()
-export class UserResolver {
+export class MLResolver {
     @Query(() => String)
-    async UserResolverHealthCheck(): Promise<string> {
+    async PythonServerHealthCheck(): Promise<string> {
         try {
             const response = await axios.get('http://ml_model:5000/health');
             if (response.data.status === 'OK') {
-                return 'Python server is healthy';
+                return 'OK';
             } else {
                 return 'Python server returned an unexpected response';
             }
