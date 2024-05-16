@@ -1,46 +1,29 @@
-from flask import Flask, jsonify
-import pika
+from flask import Flask, jsonify, request
 import ml_model
-import json
 
 app = Flask(__name__)
 
-# Connect to RabbitMQ
-connection = pika.BlockingConnection(pika.ConnectionParameters('amqp://rabbitmq'))
-channel = connection.channel()
+def is_healthy():
+    return True
 
-# Declare the queue
-channel.queue_declare(queue='ml_model_health_check', durable=True)
-
-# Health check endpoint
-@app.route('/health')
+@app.route('/health', methods=['GET'])
 def health_check():
-    if ml_model.is_healthy():
+    if is_healthy():
         return jsonify({'status': 'OK'}), 200
     else:
         return jsonify({'status': 'error'}), 500
 
-def callback(ch, method, properties, body):
-    message = body.decode()
-    print("Received message:", message)
-
-    if ml_model.is_healthy():
-        response = {'status': 'OK'}
+@app.route('/get_recommendations', methods=['POST'])
+def get_user_recommendations():
+    if request.method == 'POST':
+        user_preferences = request.json
+        df = ml_model.load_data('data.json')
+        df = ml_model.prepare_data(df)
+        tfidf_vectorizer, tfidf_matrix = ml_model.train_model(df)
+        recommendations = ml_model.get_recommendations(user_preferences, df, tfidf_vectorizer, tfidf_matrix)
+        return jsonify(recommendations.to_dict(orient='records')), 200
     else:
-        response = {'status': 'error'}
-
-    # Send response back to RabbitMQ
-    ch.basic_publish(exchange='',
-                     routing_key=properties.reply_to,
-                     properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-                     body=json.dumps(response))
-
-    ch.basic_ack(delivery_tag=method.delivery_tag)
-
-
-# Consume messages from the queue
-channel.basic_consume(queue='ml_model_health_check', on_message_callback=callback, auto_ack=False)
+        return jsonify({'error': 'Method not allowed'}), 405
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-

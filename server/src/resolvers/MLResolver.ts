@@ -1,34 +1,46 @@
 import { Resolver, Query } from 'type-graphql';
-import amqp from 'amqplib';
+import axios from 'axios';
 
 @Resolver()
 export class MLResolver {
     @Query(() => String)
     async pythonServerHealthCheck(): Promise<string> {
         try {
-            // Connect to RabbitMQ
-            const connection = await amqp.connect('amqp://rabbitmq');
-            const channel = await connection.createChannel();
+            const response = await axios.get('http://ml_model:5000/health');
 
-            // Declare a queue
-            const queueName = 'ml_model_health_check';
-            await channel.assertQueue(queueName, { durable: false });
-
-            const message = "Hello from nodejs server";
-            channel.sendToQueue(queueName, Buffer.from(message));
-
-            // Close the connection
-            await channel.close();
-            await connection.close();
-
-            return 'Message published to RabbitMQ';
+            if (response.data.status === 'OK') {
+                return 'Python server is healthy';
+            } else {
+                return 'Python server is not healthy';
+            }
         } catch (error) {
-            console.error('Error publishing message to RabbitMQ:', error);
-            return 'Error publishing message to RabbitMQ';
+            console.error('Error checking Python server health:', error);
+            return 'Error checking Python server health';
         }
     }
-}
-function uuidv4() {
-    throw new Error('Function not implemented.');
-}
 
+    @Query(() => String)
+    async getRecommendations(): Promise<string> {
+        try {
+            const userPreferences = {
+                location: 'Venice',
+                category: 'Boat Tours',
+                price: '$',
+                duration: '2 hours'
+            };
+
+            const response = await axios.post('http://ml_model:5000/get_recommendations', userPreferences);
+
+            if (response.status === 200) {
+                console.log("RESPONSE", response.data);
+                return JSON.stringify(response.data);
+            } else {
+                return 'Error retrieving recommendations';
+            }
+        } catch (error) {
+            console.error('Error retrieving recommendations:', error);
+            return 'Error retrieving recommendations';
+        }
+    }
+
+}
