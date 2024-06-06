@@ -21,6 +21,8 @@ services:
     build:
       context: ./ml_model
       dockerfile: Dockerfile
+    volumes:
+      - ./ml_model/data:/app/data
 
 volumes:
   postgres_data:

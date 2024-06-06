@@ -83,10 +83,9 @@ auth.set_access_token(access_token, access_secret)
         cleanedarticles.append(article)
     return cleanedarticles
 
-print('Collecting tweets from Popular News Twitter Handles')
-NewsChannelsUsernames = ["nytimes","CNN","washingtonpost"]
-usersData = get_users(NewsChannelsUsernames, 25)
-print('Collected tweets from Popular News Twitter Handles')
+
+
+
 usersData.drop_duplicates(inplace = True)
 
 # Filetered users with tweets > 10 and popularity
@@ -95,17 +94,9 @@ usersData = usersData[(usersData.totalTweets > 10) & (usersData.Popularity > 1)]
 
 usersData = usersData.reset_index(drop=True)
 
-print('Collecting Users Data')
-
 vfunc = np.vectorize(getTweets)
 
-usersData["tweets"] = usersData['ActiveNewsReaders'].apply(lambda x: getTweets(x))
-usersData = usersData[(usersData['tweets']!='None')]
-print('Collected Users Data and now processing data')
-usersData["ptweets"] = usersData['tweets'].apply(lambda x : processTweets(x))
 
-
-print('Calculating TFIDF')
 
 tfidf_vectorizer = TfidfVectorizer(max_df=0.9, max_features=200000,
                                  min_df=0.1,
@@ -120,7 +111,6 @@ if not os.path.exists(location):
 pickle.dump(tfidf_vectorizer, open("%smodel_tfidf.pickle.dat"%location, "wb"))
 
 
-
 num_clusters = 5
 print('Calculating Kmeans Cluster')
 km = KMeans(n_clusters=num_clusters, init='k-means++', max_iter=100, n_init=1)
@@ -131,7 +121,7 @@ clusters = km.labels_.tolist()
 pickle.dump(km, open("%smodel_kmeans.pickle.dat"%location, "wb"))
 
 usersData['cluster'] = clusters
-print("Top terms per cluster:")
+
 order_centroids = km.cluster_centers_.argsort()[:, ::-1]
 terms = tfidf_vectorizer.get_feature_names()
 for i in range(num_clusters):
@@ -143,7 +133,7 @@ for i in range(num_clusters):
 
 # Sentiment analysis
 
-docs = list(usersData['ptweets'].apply(lambda x: x.split()))
+docs = list(usersData['info'].apply(lambda x: x.split()))
 
 bigram = Phrases(docs, min_count=10)
 trigram = Phrases(bigram[docs])
@@ -164,8 +154,7 @@ dictionary = Dictionary(docs)
 dictionary.filter_extremes(no_below=10, no_above=0.2)
 
 corpus = [dictionary.doc2bow(doc) for doc in docs]
-print('Number of unique tokens: %d' % len(dictionary))
-print('Number of documents: %d' % len(corpus))
+
 print(corpus[:1])
 
 
@@ -190,16 +179,10 @@ for key in DataFrameDict.keys():
     dictionarycluster[key]=Dictionary(docscluster[key])
 
 
-os.environ['PATH'] += ":/usr/local/go/bin"
-
-
-os.environ['MALLET_HOME'] = config['mallet']['path']
 
 mallet_path = config['mallet']['path']+ '\\bin\\mallet'
 ldamallet = LdaMallet(mallet_path, corpus = corpus, id2word = dictionary, iterations = 30)
 
-# Download File: http://mallet.cs.umass.edu/dist/mallet-2.0.8.zip
-# mallet_path = "/mallet-2.0.8/bin/mallet" # update this path
 
 ldamallet = gensim.models.wrappers.LdaMallet(mallet_path, corpus=corpus, num_topics=26, id2word=dictionary)
 
@@ -260,9 +243,6 @@ from newspaper import Article
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-cnn_paper = newspaper.build('https://www.cnn.com/') #CNN paper
-WP_paper = newspaper.build('https://www.washingtonpost.com',language='en') # WP paper
-NYT_paper = newspaper.build('https://www.nytimes.com',language='en') # NYT paper
 
 
 import pandas as pd
