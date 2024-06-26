@@ -3,7 +3,7 @@ import axios from 'axios';
 import { MatchedExperiences, TravelingWith, TypeOfTraveler, TypeOfWantedTrip, WantedActivities } from '../enums';
 
 const API_URL = 'https://serpapi.com/search.json';
-const API_KEY = 'e52e756a2ebbe528671b1ffdd57befdcca67a22a8e8f0fa93a74ae411070d822';
+const API_KEY = 'b11faf112ff595a656446c494b2ebb7c098000cdf65c1bbf172f64e4a4016f03';
 
 async function getEvents(eventType: string, location: { city: string, ll: string }): Promise<any[]> {
     const formattedEventType = eventType.split('_').join('+');
